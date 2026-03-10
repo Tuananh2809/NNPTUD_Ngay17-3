@@ -4,6 +4,7 @@ let {CreateUserValidator,validationResult} = require('../utils/validatorHandler'
 let userModel = require("../schemas/users");
 
 
+
 router.get("/", async function (req, res, next) {
   let users = await userModel
     .find({ isDeleted: false })
@@ -30,7 +31,7 @@ router.get("/:id", async function (req, res, next) {
 });
 
 router.post("/",CreateUserValidator,validationResult, async function (req, res, next) {
-    try {
+  try {
       let newItem = new userModel({
         username: req.body.username,
         password: req.body.password,
@@ -56,7 +57,8 @@ router.post("/",CreateUserValidator,validationResult, async function (req, res, 
 router.put("/:id", async function (req, res, next) {
   try {
     let id = req.params.id;
-    let updatedItem = await userModel.findByIdAndUpdate(id, req.body, { new: true });
+    let updatedItem = await 
+    userModel.findByIdAndUpdate(id, req.body, { new: true });
 
     if (!updatedItem) return res.status(404).send({ message: "id not found" });
 
