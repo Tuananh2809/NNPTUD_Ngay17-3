@@ -5,6 +5,9 @@ let { RegisterValidator, validationResult } = require('../utils/validatorHandler
 let { CheckLogin } = require('../utils/authHandler')
 let jwt = require('jsonwebtoken')
 let fs = require('fs')
+let path = require('path')
+
+const privateKey = fs.readFileSync(path.join(__dirname, '../private.pem'), 'utf8');
 
 router.post('/register', RegisterValidator, validationResult, async function (req, res, next) {
     try {
@@ -17,6 +20,7 @@ router.post('/register', RegisterValidator, validationResult, async function (re
         res.status(400).send({ message: err.message });
     }
 })
+
 router.post('/login', async function (req, res, next) {
     try {
         let { username, password } = req.body;
@@ -34,12 +38,14 @@ router.post('/login', async function (req, res, next) {
             res.status(403).send("sai thong tin dang nhap");
             return;
         }
+        
         let token = jwt.sign({
-            id:result._id
-        },'secretKey',{
-            expiresIn:'1d',
-            algorithm:'RS256'
+            id: result._id
+        }, privateKey, {
+            expiresIn: '1d',
+            algorithm: 'RS256'
         })
+        
         res.cookie("LOGIN_NNPTUD_S3", token, {
             maxAge: 24 * 60 * 60 * 1000,
             httpOnly: true
@@ -50,16 +56,42 @@ router.post('/login', async function (req, res, next) {
         res.status(400).send({ message: err.message });
     }
 })
+
 router.get('/me', CheckLogin, function (req, res, next) {
     let user = req.user;
     res.send(user)
 })
+
 router.post('/logout', CheckLogin, function (req, res, next) {
     res.cookie("LOGIN_NNPTUD_S3", "", {
         maxAge: 0,
         httpOnly: true
     })
     res.send("da logout ")
+})
+
+router.post('/changepassword', CheckLogin, async function (req, res, next) {
+    try {
+        let { oldpassword, newpassword } = req.body;
+
+        if (!newpassword || newpassword.length < 6) {
+            return res.status(400).send({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+        if (!oldpassword) {
+            return res.status(400).send({ message: "Vui lòng nhập mật khẩu cũ" });
+        }
+
+        let result = await userController.ChangePassword(req.user._id, oldpassword, newpassword);
+        
+        if (!result.success) {
+            return res.status(400).send({ message: result.message });
+        }
+        
+        res.send({ message: result.message });
+
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
 })
 
 module.exports = router;

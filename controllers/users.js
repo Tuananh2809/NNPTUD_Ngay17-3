@@ -48,5 +48,28 @@ module.exports = {
         } catch (error) {
             return false;
         }
+    },
+    ChangePassword: async function (userId, oldPassword, newPassword) {
+        try {
+            let user = await userModel.findOne({ _id: userId, isDeleted: false });
+            if (!user) {
+                return { success: false, message: "Người dùng không tồn tại!" };
+            }
+
+            if (!bcrypt.compareSync(oldPassword, user.password)) {
+                return { success: false, message: "Mật khẩu cũ không chính xác!" };
+            }
+
+            let salt = bcrypt.genSaltSync(10);
+            let hashNewPassword = bcrypt.hashSync(newPassword, salt);
+
+            user.password = hashNewPassword;
+            await user.save();
+
+            return { success: true, message: "Đổi mật khẩu thành công!" };
+        } catch (error) {
+            console.log(error);
+            return { success: false, message: "Lỗi hệ thống khi đổi mật khẩu!" };
+        }
     }
 }
